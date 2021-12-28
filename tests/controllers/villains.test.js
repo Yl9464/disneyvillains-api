@@ -6,7 +6,7 @@ const { describe, it } = require('mocha')
 const { getAllVillains, getVillainBySlug, newVillain } = require('../../controllers/villains')
 const { response } = require('express')
 const models = require('../../models')
-const { villainsList } = require('./mocks')
+const { villainsList, singleVillain } = require('./mocks')
 
 chai.use(sinonChai)
 const { expect } = chai
@@ -22,6 +22,19 @@ describe('Controllers - Villains', () => {
 
       expect(stubbedFindAll).to.have.callCount(1)
       expect(stubbedSend).to.have.been.calledWith(villainsList)
+    })
+  })
+  describe('getVillainBySlug', () => {
+    it('retrieve single villian associated with provided slug from db and calls the response.send', async () => {
+      const stubbedFindOne = sinon.stub(models.villains, 'findOne').returns(singleVillain)
+      const request = { params: { slug: 'captain-hook' } }
+      const stubbedSend = sinon.stub()
+      const response = { send: stubbedSend }
+
+      await getVillainBySlug(request, response)
+
+      expect(stubbedFindOne).to.have.been.calledWith({ where: { slug: 'captain-hook' } })
+      expect(stubbedSend).to.have.been.calledWith(singleVillain)
     })
   })
 })
