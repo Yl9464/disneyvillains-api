@@ -1,10 +1,8 @@
-const mocha = require('mocha')
 const sinon = require('sinon')
 const chai = require('chai')
 const sinonChai = require('sinon-chai')
 const { describe, it } = require('mocha')
 const { getAllVillains, getVillainBySlug, newVillain } = require('../../controllers/villains')
-const { response } = require('express')
 const models = require('../../models')
 const { villainsList, singleVillain } = require('./mocks')
 
@@ -34,6 +32,21 @@ describe('Controllers - Villains', () => {
       await getVillainBySlug(request, response)
 
       expect(stubbedFindOne).to.have.been.calledWith({ where: { slug: 'captain-hook' } })
+      expect(stubbedSend).to.have.been.calledWith(singleVillain)
+    })
+  })
+  describe('newVillain', () => {
+    it('save a new villain to db and returns the saved record with a 201 status', async () => {
+      const stubbedCreate = sinon.stub(models.villains, 'create').returns(singleVillain)
+      const request = { body: singleVillain }
+      const stubbedSend = sinon.stub()
+      const stubbedStatus = sinon.stub().returns({ send: stubbedSend })
+      const response = { status: stubbedStatus }
+
+      await newVillain(request, response)
+
+      expect(stubbedCreate).to.have.been.calledWith(singleVillain)
+      expect(stubbedStatus).to.have.been.calledWith(201)
       expect(stubbedSend).to.have.been.calledWith(singleVillain)
     })
   })
