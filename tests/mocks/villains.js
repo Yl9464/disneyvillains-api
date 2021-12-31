@@ -78,7 +78,21 @@ const singleVillain = {
   slug: 'captain-hook'
 }
 
+const mockSave = {
+  name: 'Red Skull',
+  movie: 'Captain America: The First Avenger',
+  slug: 'red-skull'
+}
+
+const mockResponse = {
+  name: 'Red Skull',
+  movie: 'Captain America: The First Avenger',
+  slug: 'red-skull'
+}
+
 module.exports = {
   villainsList,
-  singleVillain
+  singleVillain,
+  mockSave,
+  mockResponse
 }

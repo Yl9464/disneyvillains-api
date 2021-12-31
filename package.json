@@ -9,7 +9,7 @@
     "lint:fix": "./node_modules/.bin/eslint --fix --format codeframe .",
     "test": "./node_modules/.bin/mocha tests/**/*.test.js"
   },
-  "repository": {
+  "repository": { 
     "type": "git",
     "url": "git+https://github.com/Yl9464/villains-api.git"
   },

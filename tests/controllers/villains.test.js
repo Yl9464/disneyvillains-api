@@ -1,53 +1,142 @@
-const sinon = require('sinon')
+const {
+  after, afterEach, before, beforeEach, describe, it
+} = require('mocha')
 const chai = require('chai')
+const { createSandbox } = require('sinon')
 const sinonChai = require('sinon-chai')
-const { describe, it } = require('mocha')
-const { getAllVillains, getVillainBySlug, newVillain } = require('../../controllers/villains')
 const models = require('../../models')
-const { villainsList, singleVillain } = require('./mocks')
+const { getAllVillains, getVillainBySlug, newVillain } = require('../../controllers/villains')
+const { villainsList, singleVillain, mockSave, mockResponse } = require('../mocks/villains')
 
 chai.use(sinonChai)
 const { expect } = chai
 
 describe('Controllers - Villains', () => {
-  describe('getAllVillains', () => {
-    it('retrieve a list of villians from the db and call response.send with that list', async () => {
-      const stubbedFindAll = sinon.stub(models.villains, 'findAll').returns(villainsList) // substitue for the real findAll(). First param name of file being called and second param is the function being stubbed
-      const stubbedSend = sinon.stub()
-      const response = { send: stubbedSend }
+  let response
+  let sandbox
+  let stubbedCreate
+  let stubbedFindAll
+  let stubbedFindOne
+  let stubbedSend
+  let stubbedSendStatus
+  let stubbedStatus
+  let stubbedStatusDotSend
 
+  before(() => {
+    sandbox = createSandbox()
+
+    stubbedCreate = sandbox.stub(models.villains, 'create')
+    stubbedFindAll = sandbox.stub(models.villains, 'findAll')
+    stubbedFindOne = sandbox.stub(models.villains, 'findOne')
+
+
+    stubbedSend = sandbox.stub()
+    stubbedSendStatus = sandbox.stub()
+    stubbedStatus = sandbox.stub()
+    stubbedStatusDotSend = sandbox.stub()
+
+    response = {
+      send: stubbedSend,
+      sendStatus: stubbedSendStatus,
+      status: stubbedStatus,
+    }
+  })
+
+  beforeEach(() => {
+    stubbedStatus.returns({ send: stubbedStatusDotSend })
+  })
+
+  afterEach(() => {
+    sandbox.reset()
+  })
+
+  after(() => {
+    sandbox.restore()
+  })
+
+  describe('getAllVillains', () => {
+    it('retrieve a list of villians from the db and call response.send with that list'), async () => {
+      stubbedFindAll.return(villainsList)
       await getAllVillains({}, response)
 
       expect(stubbedFindAll).to.have.callCount(1)
       expect(stubbedSend).to.have.been.calledWith(villainsList)
-    })
+    }
+    it('responds with a 500 status and error message weh ndb call throws an error'), async () => {
+      stubbedFindAll.throws('error')
+
+      await getAllVillains({}, response)
+
+      expect(stubbedFindAll).to.have.callCount(1)
+      expect(stubbedStatus).to.have.been.calledWith(500)
+      expect(stubbedStatusDotSend).to.have.been.calledWith('cannot retrieve villains, try again. ')
+    }
   })
-  describe('getVillainBySlug', () => {
+  describe('getAllVillainsBySlug', () => {
     it('retrieve single villian associated with provided slug from db and calls the response.send', async () => {
-      const stubbedFindOne = sinon.stub(models.villains, 'findOne').returns(singleVillain)
+      stubbedFindOne.returns(singleVillain)
       const request = { params: { slug: 'captain-hook' } }
-      const stubbedSend = sinon.stub()
-      const response = { send: stubbedSend }
 
       await getVillainBySlug(request, response)
 
       expect(stubbedFindOne).to.have.been.calledWith({ where: { slug: 'captain-hook' } })
       expect(stubbedSend).to.have.been.calledWith(singleVillain)
     })
+    it('response with a 404 status when no matching villain is found', async () => {
+      stubbedFindOne.returns(null)
+      const request = { params: { slug: 'not-found' } }
+
+      await getVillainBySlug(request, response)
+
+      expect(stubbedFindOne).to.have.been.calledWith({ where: { slug: 'not-found' } })
+      expect(stubbedSendStatus).to.have.been.calledWith(404)
+    })
+
+    it('responsds with a 500 status and error message when db call throws and error', async () => {
+      stubbedFindOne.throws('error ')
+      const request = { params: { slug: 'not-found' } }
+
+      await getVillainBySlug(request, response)
+
+      expect(stubbedFindOne).to.have.been.calledWith({ where: { slug: 'not-found' } })
+      expect(stubbedStatus).to.have.been.calledWith(500)
+      expect(stubbedStatusDotSend).to.have.been.calledWith('Unable to retrieve villain, try again')
+    })
   })
-  describe('newVillain', () => {
-    it('save a new villain to db and returns the saved record with a 201 status', async () => {
-      const stubbedCreate = sinon.stub(models.villains, 'create').returns(singleVillain)
-      const request = { body: singleVillain }
-      const stubbedSend = sinon.stub()
-      const stubbedStatus = sinon.stub().returns({ send: stubbedSend })
-      const response = { status: stubbedStatus }
+
+  describe('saveNewVillain', () => {
+    // eslint-disable-next-line max-len
+    it('creates an new villain db record from the data entered and resposneds with a 200 status and the new villain', async () => {
+      stubbedCreate.returns(mockResponse)
+      const request = { body: mockSave }
 
       await newVillain(request, response)
 
-      expect(stubbedCreate).to.have.been.calledWith(singleVillain)
+      expect(stubbedCreate).to.have.been.calledWith(mockSave)
       expect(stubbedStatus).to.have.been.calledWith(201)
-      expect(stubbedSend).to.have.been.calledWith(singleVillain)
+      expect(stubbedStatusDotSend).to.have.been.calledWith(mockSave)
+    })
+
+    it('respond with 400 status and error message when there is a missing field', async () => {
+      const request = { body: { name: mockSave.name, slug: mockSave.slug } }
+
+      await newVillain(request, response)
+
+      expect(stubbedCreate).to.have.calledWith(0)
+      expect(stubbedStatus).to.have.been.calledWith(400)
+      expect(stubbedStatusDotSend).to.have.been.calledWith('Missing field: name, movie, or slug')
+    })
+
+    it('responsed with a 500 status and error message wehn db call throws an error', async () => {
+      stubbedCreate.throws('error')
+      const request = { body: mockSave }
+
+      await newVillain(request, response)
+
+      expect(stubbedCreate).to.have.been.calledWith(mockSave)
+      expect(stubbedStatus).to.have.been.calledWith(500)
+      expect(stubbedStatusDotSend).to.have.been.calledWith('Cannot create new villa, try again.')
     })
   })
 })
+ 
