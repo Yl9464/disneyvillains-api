@@ -6,7 +6,7 @@ const getAllVillains = async (request, response) => {
 
     return response.send(villains)
   } catch (error) {
-    return response.status(500).send('cannot retrieve villains')
+    return response.status(500).send('cannot retrieve villains, try again.')
   }
 }
 
@@ -28,7 +28,7 @@ const newVillain = async (request, response) => {
     const { name, movie, slug } = request.body
 
     if (!name || !movie || !slug) {
-      return response.status(400).send('Missing Field')
+      return response.status(400).send('Missing field: name, movie, or slug')
     }
 
     const redVillain = await models.villains.create({ name, movie, slug })

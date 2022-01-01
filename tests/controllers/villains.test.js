@@ -55,23 +55,26 @@ describe('Controllers - Villains', () => {
   })
 
   describe('getAllVillains', () => {
-    it('retrieve a list of villians from the db and call response.send with that list'), async () => {
-      stubbedFindAll.return(villainsList)
+    it('retrieve a list of villians from the db and call response.send with that list', async () => {
+      stubbedFindAll.returns(villainsList)
+
       await getAllVillains({}, response)
 
       expect(stubbedFindAll).to.have.callCount(1)
       expect(stubbedSend).to.have.been.calledWith(villainsList)
-    }
-    it('responds with a 500 status and error message weh ndb call throws an error'), async () => {
+    })
+
+    it('responds with a 500 status and error message weh ndb call throws an error', async () => {
       stubbedFindAll.throws('error')
 
       await getAllVillains({}, response)
 
       expect(stubbedFindAll).to.have.callCount(1)
       expect(stubbedStatus).to.have.been.calledWith(500)
-      expect(stubbedStatusDotSend).to.have.been.calledWith('cannot retrieve villains, try again. ')
-    }
+      expect(stubbedStatusDotSend).to.have.been.calledWith('cannot retrieve villains, try again.')
+    })
   })
+
   describe('getAllVillainsBySlug', () => {
     it('retrieve single villian associated with provided slug from db and calls the response.send', async () => {
       stubbedFindOne.returns(singleVillain)
@@ -93,14 +96,14 @@ describe('Controllers - Villains', () => {
     })
 
     it('responsds with a 500 status and error message when db call throws and error', async () => {
-      stubbedFindOne.throws('error ')
-      const request = { params: { slug: 'not-found' } }
+      stubbedFindOne.throws('Error!')
+      const request = { params: { slug: 'error' } }
 
       await getVillainBySlug(request, response)
 
-      expect(stubbedFindOne).to.have.been.calledWith({ where: { slug: 'not-found' } })
+      expect(stubbedFindOne).to.have.been.calledWith({ where: { slug: 'error' } })
       expect(stubbedStatus).to.have.been.calledWith(500)
-      expect(stubbedStatusDotSend).to.have.been.calledWith('Unable to retrieve villain, try again')
+      expect(stubbedStatusDotSend).to.have.been.calledWith('cannot retrieve villain')
     })
   })
 
@@ -114,7 +117,7 @@ describe('Controllers - Villains', () => {
 
       expect(stubbedCreate).to.have.been.calledWith(mockSave)
       expect(stubbedStatus).to.have.been.calledWith(201)
-      expect(stubbedStatusDotSend).to.have.been.calledWith(mockSave)
+      expect(stubbedStatusDotSend).to.have.been.calledWith(mockResponse)
     })
 
     it('respond with 400 status and error message when there is a missing field', async () => {
@@ -122,7 +125,7 @@ describe('Controllers - Villains', () => {
 
       await newVillain(request, response)
 
-      expect(stubbedCreate).to.have.calledWith(0)
+      expect(stubbedCreate).to.have.callCount(0)
       expect(stubbedStatus).to.have.been.calledWith(400)
       expect(stubbedStatusDotSend).to.have.been.calledWith('Missing field: name, movie, or slug')
     })
@@ -135,8 +138,8 @@ describe('Controllers - Villains', () => {
 
       expect(stubbedCreate).to.have.been.calledWith(mockSave)
       expect(stubbedStatus).to.have.been.calledWith(500)
-      expect(stubbedStatusDotSend).to.have.been.calledWith('Cannot create new villa, try again.')
+      expect(stubbedStatusDotSend).to.have.been.calledWith('cannot save new villain')
     })
   })
 })
- 
+
